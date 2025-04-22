@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, flash, send_file, abort
 import os
 import sqlite3
 
@@ -58,21 +58,25 @@ def approve(request_id):
         conn.execute("UPDATE requests SET approved = 1 WHERE id = ?", (request_id,))
     return redirect(url_for('admin'))
 
-@app.route('/downloads')
-def downloads():
-    with sqlite3.connect(DATABASE) as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM requests WHERE approved = 1")
-        approved_users = cursor.fetchall()
-    return render_template('downloads.html', files=os.listdir(UPLOAD_FOLDER), users=approved_users)
+@app.route('/downloads/', defaults={'req_path': ''})
+@app.route('/downloads/<path:req_path>')
+def downloads(req_path):
+    abs_path = os.path.join(UPLOAD_FOLDER, req_path)
 
-@app.route('/download/<filename>')
-def download_file(filename):
-    return send_from_directory(UPLOAD_FOLDER, filename, as_attachment=True)
+    # If path doesn't exist, return 404
+    if not os.path.exists(abs_path):
+        return abort(404)
 
-import os
+    # If it's a file, download it
+    if os.path.isfile(abs_path):
+        return send_file(abs_path, as_attachment=True)
+
+    # It's a folder, list contents
+    files = os.listdir(abs_path)
+    files = sorted(files)
+    return render_template('downloads.html', files=files, current_path=req_path)
+
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(debug=True, host='0.0.0.0', port=port)
-
