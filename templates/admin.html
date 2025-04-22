@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Dashboard</title>
+</head>
+<body>
+    <h2>Access Requests</h2>
+    <ul>
+        {% for row in requests %}
+            <li>
+                {{ row[1] }} ({{ row[2] }}) - {{ row[3] }} |
+                {% if not row[4] %}
+                    <a href="/approve/{{ row[0] }}">Approve</a>
+                {% else %}
+                    ✅ Approved
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
